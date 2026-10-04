@@ -3,7 +3,7 @@ Contributors: firmale
 Tags: woocommerce, returns, withdrawal, estonia, breakdance
 Requires at least: 6.4
 Requires PHP: 7.4
-Stable tag: 1.2.0-rc.3
+Stable tag: 1.2.0-rc.4
 License: GPLv2 or later
 
 Tellimuse kontrolli, 14-päevase tähtaja arvutuse ja tootepõhise taganemisavaldusega kliendivorm.
@@ -20,6 +20,9 @@ Lisa Breakdance’i lehele shortcode [firmale_tagastusvorm]. Plugin kontrollib W
 4. Testi enne avaldamist testtellimustega.
 
 == Changelog ==
+
+= 1.2.0-rc.4 (testversioon) =
+* Lisatud ühe push'iga avaldamine, versioonikontroll ja automaatselt täienev changelog.
 
 = 1.2.0-rc.3 (testversioon) =
 * GitHubi uuendused töötavad nüüd avalikust repositooriumist ilma kliendi ligipääsutokenita.

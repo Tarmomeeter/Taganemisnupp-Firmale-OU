@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Firmale OÜ – WooCommerce taganemisvorm
  * Description: Tellimuse kontrolli, 14-päevase tähtaja, tootepõhise avalduse ja WooCommerce’i osalise rahatagastusega kliendivorm.
- * Version: 1.2.0-rc.2
+ * Version: 1.2.0-rc.3
  * Author: Firmale OÜ
  * Update URI: https://github.com/Tarmomeeter/Taganemisnupp-Firmale-OU
  * Text Domain: firmale-taganemisvorm
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('FIRMALE_RETURN_VERSION', '1.2.0-rc.2');
+define('FIRMALE_RETURN_VERSION', '1.2.0-rc.3');
 define('FIRMALE_RETURN_FILE', __FILE__);
 define('FIRMALE_RETURN_PATH', plugin_dir_path(__FILE__));
 define('FIRMALE_RETURN_URL', plugin_dir_url(__FILE__));

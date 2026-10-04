@@ -1,0 +1,6 @@
+# Local credentials and environment files must never be published.
+.env
+.env.*
+*.secret
+*.token
+Firmale OÜ - Taganemisnupp.md

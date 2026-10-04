@@ -33,6 +33,7 @@ jobs:
           rsync -a ./ build/firmale-taganemisvorm/ \
             --exclude '.git/' \
             --exclude '.github/' \
+            --exclude '.gitignore' \
             --exclude 'build/' \
             --exclude 'README.md'
           cd build

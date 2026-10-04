@@ -26,7 +26,6 @@ final class Firmale_Return_Updater
     {
         add_filter('update_plugins_github.com', array($this, 'check_for_update'), 10, 4);
         add_filter('plugins_api', array($this, 'plugin_information'), 20, 3);
-        add_filter('http_request_args', array($this, 'authenticate_asset_download'), 10, 2);
     }
 
     public function check_for_update($update, $plugin_data, $plugin_file, $locales)
@@ -86,29 +85,6 @@ final class Firmale_Return_Updater
         );
     }
 
-    public function authenticate_asset_download($args, $url)
-    {
-        $asset_prefix = sprintf(
-            'https://api.github.com/repos/%s/%s/releases/assets/',
-            rawurlencode(self::OWNER),
-            rawurlencode(self::REPOSITORY)
-        );
-
-        if (strpos($url, $asset_prefix) !== 0) {
-            return $args;
-        }
-
-        $token = $this->token();
-        if (!$token) {
-            return $args;
-        }
-
-        $args['headers']['Authorization'] = 'Bearer ' . $token;
-        $args['headers']['Accept'] = 'application/octet-stream';
-        $args['headers']['X-GitHub-Api-Version'] = '2022-11-28';
-        return $args;
-    }
-
     private function latest_release()
     {
         $cached = get_site_transient(self::CACHE_KEY);
@@ -125,11 +101,6 @@ final class Firmale_Return_Updater
             'Accept'               => 'application/vnd.github+json',
             'X-GitHub-Api-Version' => '2022-11-28',
         );
-        $token = $this->token();
-        if ($token) {
-            $headers['Authorization'] = 'Bearer ' . $token;
-        }
-
         $response = wp_remote_get($url, array(
             'headers' => $headers,
             'timeout' => 15,
@@ -152,18 +123,12 @@ final class Firmale_Return_Updater
     {
         if (!empty($release['assets']) && is_array($release['assets'])) {
             foreach ($release['assets'] as $asset) {
-                if (!empty($asset['name']) && $asset['name'] === self::ASSET_NAME && !empty($asset['url'])) {
-                    return esc_url_raw($asset['url']);
+                if (!empty($asset['name']) && $asset['name'] === self::ASSET_NAME && !empty($asset['browser_download_url'])) {
+                    return esc_url_raw($asset['browser_download_url']);
                 }
             }
         }
 
         return !empty($release['zipball_url']) ? esc_url_raw($release['zipball_url']) : '';
-    }
-
-    private function token()
-    {
-        $token = defined('FIRMALE_GITHUB_TOKEN') ? FIRMALE_GITHUB_TOKEN : '';
-        return trim((string) apply_filters('firmale_github_token', $token));
     }
 }

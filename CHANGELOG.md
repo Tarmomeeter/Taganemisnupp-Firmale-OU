@@ -2,9 +2,15 @@
 
 All notable changes to the Firmale returns plugin are documented here.
 
+## [1.2.0-rc.5] - 2026-10-04
+
+- Fixed automatic changelog entry formatting.
+
 ## [1.2.0-rc.4] - 2026-10-04
 
-- Updated plugin release metadata and documentation.- Automate plugin publishing on push
+- Updated plugin release metadata and documentation.
+
+- Automate plugin publishing on push
 
 - Add automatic publishing and changelog maintenance
 

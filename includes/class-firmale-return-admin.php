@@ -19,6 +19,7 @@ final class Firmale_Return_Admin
     private function __construct()
     {
         add_action('admin_menu', array($this, 'admin_menu'));
+        add_action('admin_enqueue_scripts', array($this, 'admin_assets'));
         add_action('admin_init', array($this, 'register_settings'));
         add_action('add_meta_boxes', array($this, 'add_meta_boxes'));
         add_action('save_post_' . Firmale_Return_Plugin::CPT, array($this, 'save_request'));
@@ -27,6 +28,34 @@ final class Firmale_Return_Admin
         add_action('admin_notices', array($this, 'woocommerce_notice'));
         add_action('admin_notices', array($this, 'refund_notice'));
         add_action('admin_notices', array($this, 'configuration_notice'));
+    }
+
+    public function admin_assets()
+    {
+        $screen = get_current_screen();
+        if (!$screen) {
+            return;
+        }
+
+        $is_plugin_screen = $screen->post_type === Firmale_Return_Plugin::CPT
+            || in_array($screen->id, array('woocommerce_page_firmale-return-settings', 'woocommerce_page_firmale-return-analytics'), true);
+        if (!$is_plugin_screen) {
+            return;
+        }
+
+        wp_enqueue_style(
+            'firmale-return-admin',
+            FIRMALE_RETURN_URL . 'assets/css/admin.css',
+            array(),
+            FIRMALE_RETURN_VERSION
+        );
+        wp_enqueue_script(
+            'firmale-return-admin',
+            FIRMALE_RETURN_URL . 'assets/js/admin.js',
+            array(),
+            FIRMALE_RETURN_VERSION,
+            true
+        );
     }
 
     public function admin_menu()
@@ -280,13 +309,38 @@ final class Firmale_Return_Admin
             return;
         }
         ?>
-        <div class="wrap">
-            <h1>Tagastusvormi seaded</h1>
-            <p>Lisa tagastusvorm Breakdance’i Shortcode-elemendiga: <code>[firmale_tagastusvorm]</code></p>
+        <div class="wrap firmale-admin firmale-settings-page">
+            <header class="firmale-page-header">
+                <div>
+                    <span class="firmale-eyebrow">Firmale OÜ · WooCommerce</span>
+                    <h1>Tagastusvormi seaded</h1>
+                    <p>Halda kliendivaadet, menetlust, turvalisust ja logistikat ühest kohast.</p>
+                </div>
+                <div class="firmale-shortcode-card">
+                    <span>Vormi shortcode</span>
+                    <code>[firmale_tagastusvorm]</code>
+                </div>
+            </header>
 
-            <form method="post" action="options.php">
+            <div class="firmale-settings-toolbar">
+                <nav class="firmale-tabs" aria-label="Seadete jaotised" data-firmale-tabs>
+                    <button type="button" class="is-active" data-section="general">Üldine</button>
+                    <button type="button" data-section="security">Turvalisus</button>
+                    <button type="button" data-section="workflow">Menetlus</button>
+                    <button type="button" data-section="deadlines">Tähtajad</button>
+                    <button type="button" data-section="logistics">Logistika</button>
+                    <button type="button" data-section="privacy">Privaatsus</button>
+                </nav>
+                <label class="firmale-settings-search">
+                    <span class="screen-reader-text">Otsi seadet</span>
+                    <input type="search" placeholder="Otsi seadet…" data-firmale-settings-search>
+                </label>
+            </div>
+
+            <form method="post" action="options.php" class="firmale-settings-form">
                 <?php settings_fields('firmale_return_settings'); ?>
                 <table class="form-table" role="presentation">
+                    <?php $this->settings_section('Üldseaded', 'general', 'Põhikäitumine, teavitused ja rahatagastuse vaikeseaded.'); ?>
                     <tr>
                         <th scope="row"><label for="firmale_return_admin_email">Teavituste e-post</label></th>
                         <td>
@@ -406,7 +460,7 @@ final class Firmale_Return_Admin
                             <p class="description">Administraator saab seda iga avalduse juures eraldi muuta.</p>
                         </td>
                     </tr>
-                    <?php $this->settings_section('Turvalisus'); ?>
+                    <?php $this->settings_section('Turvalisus', 'security', 'Kaitse kliendi andmeid ja suure mõjuga rahatagastustoiminguid.'); ?>
                     <?php $this->settings_checkbox_row('firmale_return_enable_turnstile', 'Cloudflare Turnstile', 'Kaitse tellimuse kontrolli Cloudflare Turnstile’iga', 'Kui see on sisse lülitatud, peab lisama ka saidi- ja salajase võtme.', false); ?>
                     <?php $this->settings_checkbox_row('firmale_return_trust_cloudflare_ip', 'Cloudflare külastaja IP', 'Kasuta päringupiirangus CF-Connecting-IP päist', 'Lülita sisse ainult siis, kui origin võtab vastu üksnes Cloudflare’i liiklust. Turnstile ei vaja seda valikut.', false); ?>
                     <tr>
@@ -427,7 +481,7 @@ final class Firmale_Return_Admin
                         <td><input type="number" min="0" step="0.01" name="firmale_return_dual_approval_threshold" value="<?php echo esc_attr(get_option('firmale_return_dual_approval_threshold', 200)); ?>"> <?php echo esc_html(get_woocommerce_currency_symbol()); ?></td>
                     </tr>
 
-                    <?php $this->settings_section('Menetlus ja kliendivaade'); ?>
+                    <?php $this->settings_section('Menetlus ja kliendivaade', 'workflow', 'Seadista avalduse elutsükkel ja kliendile nähtavad võimalused.'); ?>
                     <?php $this->settings_checkbox_row('firmale_return_require_received', 'Rahatagastuse turvalukk', 'Luba rahatagastus alles pärast kauba saabumise või kontrolli olekut', 'Soovituslik: väldib raha tagastamist enne kauba või saatmistõendi kontrolli.', true); ?>
                     <?php $this->settings_checkbox_row('firmale_return_enable_defect_flow', 'Puudusega kauba voog', 'Erista puudusega või vale toote avaldus tavalisest taganemisest', '', true); ?>
                     <?php $this->settings_checkbox_row('firmale_return_enable_attachments', 'Turvalised manused', 'Luba puuduse fotod ja PDF-dokumendid', 'Failid salvestatakse avalduse metaandmetesse ning neid saab avada ainult haldusest.', true); ?>
@@ -445,7 +499,7 @@ final class Firmale_Return_Admin
                     <?php $this->settings_checkbox_row('firmale_return_enable_product_rules', 'Tootepõhised reeglid', 'Lisa tootele käsitsi kontrolli ja pikema perioodi väljad', '', true); ?>
                     <?php $this->settings_checkbox_row('firmale_return_enable_audit_log', 'Auditilogi', 'Salvesta avalduse olulised toimingud, kasutaja ja kellaaeg', '', true); ?>
 
-                    <?php $this->settings_section('Tähtajad'); ?>
+                    <?php $this->settings_section('Tähtajad', 'deadlines', 'Määra tagastusperioodid, erandid ja kättesaamiskuupäevade allikad.'); ?>
                     <?php $this->settings_number_row('firmale_return_default_period_days', 'Vaikimisi periood', 'päeva', 14, 14, 365); ?>
                     <?php $this->settings_checkbox_row('firmale_return_enable_extended_period', 'Pikendatud periood', 'Luba valitud kasutajarollidele pikem tagastusperiood', '', false); ?>
                     <?php $this->settings_checkbox_row('firmale_return_enable_shipment_dates', 'Mitme saadetise kuupäevad', 'Kasuta mitmest metaväljast leitud viimast kättesaamiskuupäeva', '', true); ?>
@@ -465,7 +519,7 @@ final class Firmale_Return_Admin
                         <td><input class="regular-text" type="text" name="firmale_return_shipment_meta_keys" value="<?php echo esc_attr(get_option('firmale_return_shipment_meta_keys', '_delivered_at')); ?>"><p class="description">Komadega eraldatud tellimuse metaväljad. Mitme kuupäeva korral kasutatakse viimast kättesaamist.</p></td>
                     </tr>
 
-                    <?php $this->settings_section('Logistika'); ?>
+                    <?php $this->settings_section('Logistika', 'logistics', 'Halda tagastusviise, vedaja ühendust ja saatmiskulude reegleid.'); ?>
                     <?php $this->settings_checkbox_row('firmale_return_enable_return_methods', 'Tagastusviisid', 'Lase kliendil valida tagastusviis', '', true); ?>
                     <?php $this->settings_checkbox_row('firmale_return_method_locker', 'Pakiautomaat', 'Näita pakiautomaadi valikut', '', true); ?>
                     <?php $this->settings_checkbox_row('firmale_return_method_courier', 'Kuller', 'Näita kulleri valikut', '', true); ?>
@@ -508,21 +562,28 @@ final class Firmale_Return_Admin
                         <td><input type="number" min="0" step="0.01" name="firmale_return_standard_shipping_cap" value="<?php echo esc_attr(get_option('firmale_return_standard_shipping_cap', 0)); ?>"> <?php echo esc_html(get_woocommerce_currency_symbol()); ?><p class="description">0 tähendab, et ülempiiri ei rakendata. Määra siia poe odavaima tavapärase tarne maksimaalne hüvitatav summa.</p></td>
                     </tr>
 
-                    <?php $this->settings_section('Privaatsus ja aruandlus'); ?>
+                    <?php $this->settings_section('Privaatsus ja aruandlus', 'privacy', 'Andmete säilitamine, WordPressi privaatsustööriistad ja koondaruanded.'); ?>
                     <?php $this->settings_checkbox_row('firmale_return_enable_privacy_tools', 'WordPressi privaatsustööriistad', 'Lisa tagastusandmed isikuandmete ekspordi ja kustutamise tööriistadesse', '', true); ?>
                     <?php $this->settings_checkbox_row('firmale_return_enable_retention', 'Kontaktandmete automaatne eemaldamine', 'Eemalda lõpetatud avalduste kontaktandmed, vaba tekst, manused ja jälgimislingid', 'Aeg algab menetluse lõpetamisest. Tellimusseos ja tehingukirjed säilivad; see ei ole täielik anonümiseerimine.', false); ?>
                     <?php $this->settings_number_row('firmale_return_retention_days', 'Säilitusaeg', 'päeva', 730, 30, 3650); ?>
                     <?php $this->settings_checkbox_row('firmale_return_enable_analytics', 'Tagastusanalüütika', 'Näita WooCommerce’i menüüs tagastuste koondaruannet', '', true); ?>
                 </table>
-                <?php submit_button(); ?>
+                <div class="firmale-save-bar">
+                    <span class="firmale-save-hint">Muudatused rakenduvad pärast salvestamist.</span>
+                    <?php submit_button('Salvesta seaded', 'primary large', 'submit', false); ?>
+                </div>
             </form>
         </div>
         <?php
     }
 
-    private function settings_section($title)
+    private function settings_section($title, $key, $description = '')
     {
-        echo '<tr><th colspan="2" style="padding-top:32px"><h2 style="margin:0">' . esc_html($title) . '</h2></th></tr>';
+        echo '<tr class="firmale-settings-section" data-section="' . esc_attr($key) . '"><th colspan="2"><h2>' . esc_html($title) . '</h2>';
+        if ($description) {
+            echo '<p>' . esc_html($description) . '</p>';
+        }
+        echo '</th></tr>';
     }
 
     private function settings_checkbox_row($option, $title, $label, $description = '', $default = false)
@@ -595,17 +656,19 @@ final class Firmale_Return_Admin
         $statuses = $this->status_labels();
         $reasons = $this->reason_labels();
         ?>
-        <div class="wrap">
-            <h1>Tagastuste analüütika</h1>
-            <p>Viimase 12 kuu kuni 1000 uusima avalduse koondvaade. Tootekogused tähistavad esitatud soove, mitte kinnitatud tagastusi. Summad sisaldavad ka käsitsi maksmist ootavaid WooCommerce’i kandeid.</p>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;max-width:1100px;margin:20px 0">
-                <div class="card"><h2>Avaldusi</h2><p style="font-size:30px;margin:0"><strong><?php echo esc_html(count($ids)); ?></strong></p></div>
-                <div class="card"><h2>Tagastuskannete summa</h2><p style="font-size:30px;margin:0"><strong><?php foreach ($refunded_total as $currency => $total) { echo wp_kses_post(wc_price($total, array('currency' => $currency))) . '<br>'; } ?></strong></p></div>
+        <div class="wrap firmale-admin firmale-analytics-page">
+            <header class="firmale-page-header">
+                <div><span class="firmale-eyebrow">Viimased 12 kuud</span><h1>Tagastuste analüütika</h1><p>Kuni 1000 uusima avalduse praktiline koondvaade.</p></div>
+            </header>
+            <div class="firmale-metric-grid">
+                <div class="firmale-metric-card"><span>Avaldusi</span><strong><?php echo esc_html(count($ids)); ?></strong><small>esitatud tagastussoovi</small></div>
+                <div class="firmale-metric-card firmale-metric-card--accent"><span>Tagastuskannete summa</span><strong><?php foreach ($refunded_total as $currency => $total) { echo wp_kses_post(wc_price($total, array('currency' => $currency))) . '<br>'; } ?></strong><small>sisaldab ka käsitsi maksmist ootavaid kandeid</small></div>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:1100px">
-                <div><h2>Olekud</h2><table class="widefat striped"><tbody><?php foreach ($status_counts as $key => $count) : ?><tr><td><?php echo esc_html(isset($statuses[$key]) ? $statuses[$key] : $key); ?></td><td><?php echo esc_html($count); ?></td></tr><?php endforeach; ?></tbody></table></div>
-                <div><h2>Põhjused</h2><table class="widefat striped"><tbody><?php foreach ($reason_counts as $key => $count) : ?><tr><td><?php echo esc_html(isset($reasons[$key]) ? $reasons[$key] : ($key === 'not_given' ? 'Ei märgitud' : $key)); ?></td><td><?php echo esc_html($count); ?></td></tr><?php endforeach; ?></tbody></table></div>
-                <div><h2>Enim tagastatud tooted</h2><table class="widefat striped"><tbody><?php foreach (array_slice($product_counts, 0, 20, true) as $name => $count) : ?><tr><td><?php echo esc_html($name); ?></td><td><?php echo esc_html($count); ?></td></tr><?php endforeach; ?></tbody></table></div>
+            <p class="firmale-context-note">Tootekogused tähistavad esitatud soove, mitte kinnitatud tagastusi.</p>
+            <div class="firmale-report-grid">
+                <section class="firmale-panel"><h2>Olekud</h2><table class="widefat"><tbody><?php foreach ($status_counts as $key => $count) : ?><tr><td><?php echo esc_html(isset($statuses[$key]) ? $statuses[$key] : $key); ?></td><td><strong><?php echo esc_html($count); ?></strong></td></tr><?php endforeach; ?></tbody></table></section>
+                <section class="firmale-panel"><h2>Põhjused</h2><table class="widefat"><tbody><?php foreach ($reason_counts as $key => $count) : ?><tr><td><?php echo esc_html(isset($reasons[$key]) ? $reasons[$key] : ($key === 'not_given' ? 'Ei märgitud' : $key)); ?></td><td><strong><?php echo esc_html($count); ?></strong></td></tr><?php endforeach; ?></tbody></table></section>
+                <section class="firmale-panel"><h2>Enim tagastatud tooted</h2><table class="widefat"><tbody><?php foreach (array_slice($product_counts, 0, 20, true) as $name => $count) : ?><tr><td><?php echo esc_html($name); ?></td><td><strong><?php echo esc_html($count); ?></strong></td></tr><?php endforeach; ?></tbody></table></section>
             </div>
         </div>
         <?php
@@ -678,7 +741,12 @@ final class Firmale_Return_Admin
 
         wp_nonce_field('firmale_return_save_request', 'firmale_return_nonce');
         ?>
-        <table class="widefat striped" style="max-width:900px">
+        <div class="firmale-case-summary">
+            <div><span>Menetluse olek</span><strong class="firmale-status firmale-status--<?php echo esc_attr($status); ?>"><?php echo esc_html(isset($statuses[$status]) ? $statuses[$status] : $status); ?></strong></div>
+            <div><span>Tellimus</span><strong><?php if ($order_url) : ?><a href="<?php echo esc_url($order_url); ?>">#<?php echo esc_html($order->get_order_number()); ?></a><?php else : ?>–<?php endif; ?></strong></div>
+            <div><span>Klient</span><strong><?php echo esc_html($name ?: '–'); ?></strong></div>
+        </div>
+        <table class="widefat striped firmale-detail-table">
             <tbody>
                 <tr><th style="width:220px">WooCommerce’i tellimus</th><td><?php if ($order_url) : ?><a href="<?php echo esc_url($order_url); ?>">#<?php echo esc_html($order->get_order_number()); ?></a><?php else : ?>–<?php endif; ?></td></tr>
                 <tr><th>Klient</th><td><?php echo esc_html($name); ?></td></tr>
@@ -728,7 +796,7 @@ final class Firmale_Return_Admin
             </tbody>
         </table>
         <?php if (current_user_can('manage_options') && $can_process_refunds && in_array(get_post_meta($post->ID, '_firmale_payment_state', true), array('processing', 'uncertain'), true)) : ?>
-            <div class="notice notice-error inline" style="max-width:900px;padding:16px">
+            <div class="notice notice-error inline firmale-action-panel">
                 <h3>Ebaselge maksetulemuse käsitsi kontroll</h3>
                 <p>Kontrolli kõigepealt makseteenuse haldusest ja WooCommerce’ist, kas raha liiguti. Veendu, et eelmine päring ei ole enam töös. Ära eemalda lukku ainult veateate tõttu. Taastamine on lubatud tund pärast toimingu algust.</p>
                 <p><label>Olemasoleva, kontrollitud rahatagastuse ID (0 ainult siis, kui ei tehtud makset ega tagastuskannet)<br><input type="number" min="0" name="firmale_reconcile_refund_id" value="0"></label></p>
@@ -737,8 +805,8 @@ final class Firmale_Return_Admin
                 <button class="button" type="submit" name="firmale_reconcile_payment" value="1">Salvesta kontroll ja vabasta tellimuse lukk</button>
             </div>
         <?php endif; ?>
-        <div style="max-width:900px;margin-top:20px;padding:20px;border:1px solid #c3c4c7;background:#fff">
-            <h2 style="margin-top:0">Tagastuslogistika</h2>
+        <div class="firmale-action-panel">
+            <h2>Tagastuslogistika</h2>
             <p>
                 <label><strong>Tagastuskood</strong><br><input class="regular-text" type="text" name="firmale_return_code" value="<?php echo esc_attr($return_code); ?>"></label>
             </p>
@@ -755,8 +823,8 @@ final class Firmale_Return_Admin
             <?php if ($return_label_url) : ?><p><a href="<?php echo esc_url($return_label_url); ?>" target="_blank" rel="noopener">Ava või prindi pakisilt / salvesta PDF-ina</a></p><?php endif; ?>
         </div>
         <?php if ($resolution === 'store_credit' && (bool) get_option('firmale_return_enable_store_credit', false)) : ?>
-            <div style="max-width:900px;margin-top:20px;padding:20px;border:1px solid #c3c4c7;background:#fff">
-                <h2 style="margin-top:0">Poekrediit</h2>
+            <div class="firmale-action-panel">
+                <h2>Poekrediit</h2>
                 <?php if ($store_credit_coupon) : ?>
                     <p>Loodud kupong: <strong><?php echo esc_html($store_credit_coupon); ?></strong></p>
                 <?php else : ?>
@@ -765,8 +833,8 @@ final class Firmale_Return_Admin
             </div>
         <?php endif; ?>
         <?php if ($refunds_enabled) : ?>
-            <div style="max-width:900px;margin-top:20px;padding:20px;border:1px solid #c3c4c7;background:#fff">
-                <h2 style="margin-top:0">Osaline rahatagastus</h2>
+            <div class="firmale-action-panel firmale-refund-panel">
+                <h2>Osaline rahatagastus</h2>
                 <?php if ($refund_id) : ?>
                     <p><strong>WooCommerce’i tagastuskanne on loodud.</strong> Käsitsi kande puhul kontrolli eraldi raha ülekandmist.</p>
                     <table class="widefat striped">
@@ -835,7 +903,7 @@ final class Firmale_Return_Admin
             </div>
         <?php endif; ?>
         <?php if ((bool) get_option('firmale_return_enable_audit_log', true) && is_array($audit_log) && $audit_log) : ?>
-            <div style="max-width:900px;margin-top:20px">
+            <div class="firmale-action-panel firmale-audit-panel">
                 <h2>Auditilogi</h2>
                 <table class="widefat striped">
                     <thead><tr><th>Aeg</th><th>Kasutaja</th><th>Sündmus</th><th>Kirjeldus</th></tr></thead>
@@ -1007,7 +1075,7 @@ final class Firmale_Return_Admin
         } elseif ($column === 'firmale_status') {
             $status = get_post_meta($post_id, '_firmale_status', true) ?: 'new';
             $labels = $this->status_labels();
-            echo esc_html(isset($labels[$status]) ? $labels[$status] : $status);
+            echo '<span class="firmale-status firmale-status--' . esc_attr($status) . '">' . esc_html(isset($labels[$status]) ? $labels[$status] : $status) . '</span>';
         }
     }
 
